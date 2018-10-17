@@ -19,3 +19,7 @@ It will then do the following:
 3. If it does not exist, end the process.
 4. Otherwise, finds the latest installed version directory
 5. Inside its lib folder, it will replace the DLL file (in the appropriate sub-folder)
+
+## Remarks
+This allows local applications that use the nuget package, to automatically get the updated DLL when they are rebuilt.
+This shortens the testing cycle and provides a convinient mechanism to test new versions of the package DLLs locally.
