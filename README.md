@@ -8,8 +8,9 @@ dotnet tool install -g update-local-nuget-cache
 
 ## To run
 In the PostBuild event of your Visual Studio projects, add:
+
 ```
-update-local-nuget-cache $(ProjectDir)
+update-local-nuget-cache $(ProjectPath) $(TargetPath) $(TargetName)
 ```
 
 It will then do the following:
@@ -22,4 +23,4 @@ It will then do the following:
 
 ## Remarks
 This allows local applications that use the nuget package, to automatically get the updated DLL when they are rebuilt.
-This shortens the testing cycle and provides a convinient mechanism to test new versions of the package DLLs locally.
+This shortens the testing cycle and provides a convenient mechanism to test new versions of the package DLLs locally.
