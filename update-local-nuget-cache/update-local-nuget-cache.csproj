@@ -6,7 +6,6 @@
     <RootNamespace>update_local_nuget_cache</RootNamespace>
 
     <PackAsTool>True</PackAsTool>
-    
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Geeks ltd</Authors>
