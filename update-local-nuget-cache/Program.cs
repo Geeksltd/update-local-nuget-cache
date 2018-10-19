@@ -11,7 +11,7 @@ namespace update_local_nuget_cache
         {
             if (args.Length < 3)
             {
-                Console.WriteLine("Syntax error\nShould be called like this:\nupdate-local-nuget-cache $(ProjectPath) $(OutputPath) $(ProjectName)");
+                Console.WriteLine("* Syntax error\nShould be called like this:\nupdate-local-nuget-cache $(ProjectPath) $(OutputPath) $(ProjectName)");
                 return 1;
             }
 
@@ -25,7 +25,8 @@ namespace update_local_nuget_cache
             var csProjXml = XElement.Load(projectPath);
 
             // we get it like this since other property groups might exist with similar elements like version
-            var propertyGroup = csProjXml.Descendants("OutputType").First().Parent;
+
+            var propertyGroup = csProjXml.Descendants("TargetFramework").First().Parent;
             var targetFramework = propertyGroup.Element("TargetFramework")?.Value;
             var version = "";
             var packageId = "";
