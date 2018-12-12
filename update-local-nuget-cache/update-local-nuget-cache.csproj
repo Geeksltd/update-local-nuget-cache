@@ -9,7 +9,7 @@
     <Authors>Geeks ltd</Authors>
     <Company>Geeks ltd</Company>
     <PackageId>update-local-nuget-cache</PackageId>
-    <Version>1.0.3</Version>
+    <Version>1.0.5</Version>
     <Description>updates the local nuget cache for easier development</Description>
     <Copyright>Geeks ltd</Copyright>
     <PackageProjectUrl>https://github.com/geeksltd/update-local-nuget-cache</PackageProjectUrl>
