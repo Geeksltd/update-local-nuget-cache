@@ -52,7 +52,16 @@ namespace update_local_nuget_cache
 
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var nuGetCache = userProfile + "\\.nuget\\packages\\";
-            var packageFolder = nuGetCache + packageId + "\\" + version + "\\lib\\" + targetFramework;
+
+            var packagesFolder = nuGetCache + packageId;
+            if (!Directory.Exists(packagesFolder))
+            {
+                Console.WriteLine("did not exist : " + packagesFolder);
+                return 0;
+            }
+
+            var packageFolder = Directory.GetDirectories(packagesFolder).OrderByDescending(x => new DirectoryInfo(x).CreationTimeUtc).FirstOrDefault();
+            packageFolder = Path.Combine(packageFolder, "lib\\" + targetFramework);
 
             if (!Directory.Exists(packageFolder))
             {
