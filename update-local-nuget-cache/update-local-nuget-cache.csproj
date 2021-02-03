@@ -9,10 +9,13 @@
     <Authors>Geeks ltd</Authors>
     <Company>Geeks ltd</Company>
     <PackageId>update-local-nuget-cache</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Description>updates the local nuget cache for easier development</Description>
     <Copyright>Geeks ltd</Copyright>
     <PackageProjectUrl>https://github.com/geeksltd/update-local-nuget-cache</PackageProjectUrl>
     <PackageReleaseNotes>- Fixed an issue were a tag which might not exist in all project was being searched for to find to property group in the .csproj file</PackageReleaseNotes>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Olive" Version="2.1.212" />
+  </ItemGroup>
 </Project>

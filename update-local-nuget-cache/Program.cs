@@ -2,83 +2,103 @@
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Olive;
 
 namespace update_local_nuget_cache
 {
     class Program
     {
-        static int Main(string[] args)
+        static FileInfo Dll, Pdb, CsProj;
+        static DirectoryInfo LocalNugetCacheFolder;
+        static string TargetFramework;
+
+        static FileInfo FindCsProj()
         {
-            if (args.Length < 3)
+            var parent = Dll.Directory;
+
+            while (parent.Root != parent)
             {
-                Console.WriteLine("* Syntax error\nShould be called like this:\nupdate-local-nuget-cache $(ProjectPath) $(OutputPath) $(ProjectName)");
-                return 1;
+                CsProj = parent.GetFiles("*.csproj")
+                  .OrderByDescending(v => v.Name.ToLower() == Dll.Name.Substring(0, Dll.Name.Length - 3) + "csproj")
+                  .FirstOrDefault();
+
+                if (CsProj != null) return CsProj;
+                parent = parent.Parent;
             }
 
-            var projectPath = args[0];
-            var projectDir = Path.GetDirectoryName(projectPath);
-            var outputFile = args[1];
-            var projectName = args[2];
-            var nuspecPath = Path.Combine(projectDir, "Package.nuspec");
-            var hasNuSpec = File.Exists(nuspecPath);
+            return null;
+        }
 
-            var csProjXml = XElement.Load(projectPath);
+        static void FindFiles(string arg)
+        {
+            Dll = arg.AsFile();
+            if (!Dll.Exists()) throw new Exception("File not found: " + Dll.FullName);
+            TargetFramework = Dll.Directory.Name;
 
-            // we get it like this since other property groups might exist with similar elements like version
+            Pdb = Dll.Directory.GetFile(Dll.NameWithoutExtension() + ".pdb");
 
+            if (FindCsProj() == null)
+                throw new Exception("CsProj file not found in the parents of " + Dll.FullName);
+        }
+
+        static void FindLocalNugetCache()
+        {
+            var dotnet = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                .AsDirectory().GetSubDirectory("dotnet").GetFile("dotnet.exe");
+
+            LocalNugetCacheFolder = dotnet.Execute("nuget locals global-packages -l").ToLines().Trim()
+                 .Select(v => v.TrimStart("global-packages: "))
+                 .Select(v => v.AsDirectory())
+                 .FirstOrDefault();
+
+            if (LocalNugetCacheFolder is null) throw new Exception("Nuget cache not found!");
+        }
+
+        static void Main(string[] args)
+        {
+            if (args.Length != 1)
+                throw new Exception("Syntax: update-local-nuget-cache $(DllPath)");
+
+            FindFiles(args.First());
+
+
+
+            FindLocalNugetCache();
+
+            var csProjXml = XElement.Load(CsProj.FullName);
             var propertyGroup = csProjXml.Descendants("TargetFramework").First().Parent;
-            var targetFramework = propertyGroup.Element("TargetFramework")?.Value;
-            var version = "";
-            var packageId = "";
+            var packageId = propertyGroup.Element("PackageId").Value;
 
-            if (!hasNuSpec)
+            var folder = LocalNugetCacheFolder.GetSubDirectory(packageId);
+
+            if (!folder.Exists())
             {
-                version = propertyGroup.Element("Version")?.Value;
-                packageId = propertyGroup.Element("PackageId")?.Value;
-                if (string.IsNullOrEmpty(version))
-                    version = "1.0.0";
-                if (string.IsNullOrEmpty(packageId))
-                    packageId = projectName;
-            }
-            else
-            {
-                var nuSpecXml = XElement.Load(nuspecPath);
-                // The nuspec file has a namespace so we need to use it in our operations
-                var ns = nuSpecXml.GetDefaultNamespace();
-                var metadata = nuSpecXml.Descendants(ns + "metadata").First();
-                version = metadata.Element(ns + "version").Value;
-                packageId = metadata.Element(ns + "id").Value;
+                Console.WriteLine("Local installation not found: " + folder.FullName);
+                return;
             }
 
-            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var nuGetCache = userProfile + "\\.nuget\\packages\\";
-
-            var packagesFolder = nuGetCache + packageId;
-            if (!Directory.Exists(packagesFolder))
+            foreach (var version in folder.GetDirectories())
             {
-                Console.WriteLine("did not exist : " + packagesFolder);
-                return 0;
+                var target = version.GetSubDirectory("lib\\" + TargetFramework);
+
+                if (!target.Exists())
+                {
+                    Console.WriteLine("Expected folder does not exists: " + target.FullName);
+                    continue;
+                }
+
+                var targetFile = target.GetFile(Dll.Name);
+                if (!targetFile.Exists())
+                {
+                    Console.WriteLine("File folder does not exists: " + targetFile.FullName);
+                    continue;
+                }
+
+                Console.WriteLine("Copying to: " + targetFile.FullName);
+
+                Dll.CopyTo(targetFile, overwrite: true);
+                if (Pdb.Exists()) Pdb.CopyTo(targetFile.Directory.GetFile(Pdb.Name), overwrite: true);
             }
-
-            var packageFolder = Directory.GetDirectories(packagesFolder).OrderByDescending(x => new DirectoryInfo(x).CreationTimeUtc).FirstOrDefault();
-            packageFolder = Path.Combine(packageFolder, "lib\\" + targetFramework);
-
-            if (!Directory.Exists(packageFolder))
-            {
-                Console.WriteLine("did not exist : " + packageFolder);
-                return 0;
-            }
-
-            var fileName = Path.GetFileName(outputFile);
-            var nugetFilePath = Path.Combine(packageFolder, fileName);
-
-            if (File.Exists(nugetFilePath))
-            {
-                File.Delete(nugetFilePath);
-            }
-
-            File.Copy(outputFile, Path.Combine(packageFolder, fileName));
-            return 0;
         }
     }
 }
