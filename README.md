@@ -10,7 +10,7 @@ dotnet tool install -g update-local-nuget-cache
 In the PostBuild event of your Visual Studio projects, add:
 
 ```
-update-local-nuget-cache $(ProjectPath) $(TargetPath) $(TargetName)
+update-local-nuget-cache $(TargetPath)
 ```
 
 It will then do the following:
