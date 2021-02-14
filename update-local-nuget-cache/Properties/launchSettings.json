@@ -2,7 +2,7 @@
   "profiles": {
     "update-local-nuget-cache": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Projects\\Olive\\Olive.Console\\bin\\Debug\\netstandard2.0\\Olive.Console.dll"
+      "commandLineArgs": "E:\\Projects\\Zebble\\Source\\Zebble\\"
     }
   }
 }
