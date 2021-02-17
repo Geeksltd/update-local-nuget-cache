@@ -8,41 +8,52 @@ namespace update_local_nuget_cache
 {
     class Program
     {
-        static DirectoryInfo Root;
+        static DirectoryInfo Debug, Folder;
+        static FileInfo CsProj, Dll;
 
         static void Main(string[] args)
         {
-            Root = FindRoot(args.FirstOrDefault());
+            Folder = args.Select(v => v.AsDirectory()).FirstOrDefault(v => v.Exists());
+            CsProj = args.Where(v => v.EndsWith(".csproj")).Select(v => v.AsFile()).FirstOrDefault(v => v.Exists());
+            Dll = args.Where(v => v.EndsWith(".dll")).Select(v => v.AsFile()).FirstOrDefault(v => v.Exists());
+
+            FindDebug();
 
             foreach (var version in GetLocalCacheVersions(FindPackageId()))
-                Deploy(version);
+            {
+                try { Deploy(version); }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Failed: " + version.FullName);
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(ex.Message);
+                    Console.ResetColor();
+                }
+            }
         }
 
-        static DirectoryInfo FindRoot(string firstArg)
+        static void FindDebug()
         {
-            if (firstArg.IsEmpty())
-                firstArg = Environment.CurrentDirectory;
-
-            DirectoryInfo result;
-
-            if (firstArg.AsFile().Exists())
+            if (Dll != null)
             {
-                result = FindParentDebugRelease(firstArg.AsFile().Directory);
-                return result ?? throw new Exception("No debug or release folder found for: " + firstArg);
+                Debug = FindParentDebugRelease(Dll.Directory)
+                    ?? throw new Exception("No debug or release folder found for: " + Dll.FullName);
+                return;
             }
 
-            result = firstArg.AsDirectory();
-            if (!result.Exists()) throw new Exception("Directory not found: " + firstArg);
+            if (CsProj != null)
+            {
+                Debug = FindChildDebugRelease(CsProj.Directory);
+                if (Debug != null) return;
+            }
 
-            var parent = FindParentDebugRelease(result);
-            if (parent != null) return parent;
+            if (Folder == null) Folder = Environment.CurrentDirectory.AsDirectory();
 
-            result = result.GetSubDirectory("bin");
-            if (!result.Exists()) throw new Exception("Not found: " + result.FullName);
+            Debug = FindChildDebugRelease(Folder) ?? FindParentDebugRelease(Folder);
 
-            return new[] { result.GetSubDirectory("debug"), result.GetSubDirectory("release") }
-            .FirstOrDefault(x => x.Exists())
-            ?? throw new Exception("Didn't find debug or release in " + result.FullName);
+            if (Debug == null)
+                throw new Exception("Didn't find debug or release folder.");
         }
 
         static DirectoryInfo FindParentDebugRelease(DirectoryInfo folder)
@@ -55,16 +66,27 @@ namespace update_local_nuget_cache
             }
         }
 
+        static DirectoryInfo FindChildDebugRelease(DirectoryInfo folder)
+        {
+            folder = folder.GetSubDirectory("bin");
+            if (!folder.Exists()) return null;
+
+            return new[] { folder.GetSubDirectory("debug"), folder.GetSubDirectory("release") }
+            .FirstOrDefault(x => x.Exists());
+        }
+
         static void Deploy(DirectoryInfo destination)
         {
             foreach (var target in destination.GetDirectories())
             {
-                var newTarget = Root.GetDirectories()
+                var newTarget = Debug.GetDirectories()
                     .FirstOrDefault(x => x.Name.ToLower().Remove(".") == target.Name.ToLower().Remove("."));
 
                 if (!newTarget.Exists())
                 {
-                    Console.WriteLine("Target " + target.Name + " not found in " + Root.FullName);
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine("Target " + target.Name + " not found in " + Debug.FullName);
+                    Console.ResetColor();
                     continue;
                 }
 
@@ -78,7 +100,9 @@ namespace update_local_nuget_cache
                     else
                     {
                         here.CopyTo(file, overwrite: true);
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("Updated " + file.FullName);
+                        Console.ResetColor();
                     }
                 }
             }
@@ -93,7 +117,9 @@ namespace update_local_nuget_cache
 
         static FileInfo FindCsProj()
         {
-            var parent = Root;
+            if (CsProj != null) return CsProj;
+
+            var parent = Debug;
 
             while (parent.Root.FullName != parent.FullName)
             {
@@ -103,7 +129,7 @@ namespace update_local_nuget_cache
                 parent = parent.Parent;
             }
 
-            throw new Exception("Csproj file not found for: " + Root.FullName);
+            throw new Exception("Csproj file not found for: " + Debug.FullName);
         }
 
         static DirectoryInfo[] GetLocalCacheVersions(string packageId)
