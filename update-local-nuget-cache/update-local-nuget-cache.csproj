@@ -1,15 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>update_local_nuget_cache</RootNamespace>
     <PackAsTool>True</PackAsTool>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Geeks ltd</Authors>
     <Company>Geeks ltd</Company>
     <PackageId>update-local-nuget-cache</PackageId>
-    <Version>1.0.8</Version>
+    <Version>1.0.9.0</Version>
     <Description>updates the local nuget cache for easier development</Description>
     <Copyright>Geeks ltd</Copyright>
     <PackageProjectUrl>https://github.com/geeksltd/update-local-nuget-cache</PackageProjectUrl>

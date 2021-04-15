@@ -10,6 +10,7 @@ namespace update_local_nuget_cache
     {
         static DirectoryInfo Debug, Folder;
         static FileInfo CsProj, Dll;
+        static string PackageId;
 
         static void Main(string[] args)
         {
@@ -18,8 +19,9 @@ namespace update_local_nuget_cache
             Dll = args.Where(v => v.EndsWith(".dll")).Select(v => v.AsFile()).FirstOrDefault(v => v.Exists());
 
             FindDebug();
+            FindPackageId();
 
-            foreach (var version in GetLocalCacheVersions(FindPackageId()))
+            foreach (var version in GetLocalCacheVersions())
             {
                 try { Deploy(version); }
                 catch (Exception ex)
@@ -90,7 +92,18 @@ namespace update_local_nuget_cache
                     continue;
                 }
 
-                foreach (var file in target.GetFiles())
+                var targetFiles = target.GetFiles().ToList();
+
+                void AppendIfNotExist(string fileName)
+                {
+                    var file = target.GetFile(fileName);
+                    if (targetFiles.All(x => x.Name != file.Name)) targetFiles.Add(file);
+                }
+
+                AppendIfNotExist($"{PackageId}.pdb");
+                AppendIfNotExist($"{PackageId}.xml");
+
+                foreach (var file in targetFiles)
                 {
                     var here = newTarget.GetFile(file.Name);
                     if (!here.Exists())
@@ -108,10 +121,10 @@ namespace update_local_nuget_cache
             }
         }
 
-        static string FindPackageId()
+        static void FindPackageId()
         {
             var csProjXml = XElement.Load(FindCsProj().FullName);
-            return csProjXml.Descendants("PackageId").FirstOrDefault()?.Value
+            PackageId = csProjXml.Descendants("PackageId").FirstOrDefault()?.Value
                 ?? throw new Exception("PackageId node not found in " + FindCsProj().FullName);
         }
 
@@ -132,9 +145,9 @@ namespace update_local_nuget_cache
             throw new Exception("Csproj file not found for: " + Debug.FullName);
         }
 
-        static DirectoryInfo[] GetLocalCacheVersions(string packageId)
+        static DirectoryInfo[] GetLocalCacheVersions()
         {
-            var folder = FindLocalNugetCache().GetSubDirectory(packageId);
+            var folder = FindLocalNugetCache().GetSubDirectory(PackageId);
 
             if (!folder.Exists())
             {
