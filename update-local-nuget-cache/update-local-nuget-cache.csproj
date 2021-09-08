@@ -15,6 +15,6 @@
     <PackageReleaseNotes>- Fixed an issue were a tag which might not exist in all project was being searched for to find to property group in the .csproj file</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Olive" Version="2.1.212" />
+    <PackageReference Include="Olive" Version="2.1.281" />
   </ItemGroup>
 </Project>
