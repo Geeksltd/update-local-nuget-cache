@@ -160,10 +160,11 @@ namespace update_local_nuget_cache
 
         static DirectoryInfo FindLocalNugetCache()
         {
-            var dotnet = Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator)
-                                    .FirstOrDefault(x => x.EndsWith("dotnet"))
-                                    .AsDirectory().GetFiles()
-                                    .FirstOrDefault(x => x.NameWithoutExtension() == "dotnet");
+            var dotnet = Environment.GetEnvironmentVariable("PATH")
+                .Split(Path.PathSeparator).Except(x=>x.Contains(".dotnet"))
+                .FirstOrDefault(x=>x.Contains("dotnet"))
+                .AsDirectory().GetFiles()
+                .FirstOrDefault(x => x.NameWithoutExtension() == "dotnet");
 
             if (!dotnet.Exists()) throw new Exception("Couldn't find dotnet.exe tool."); 
 
