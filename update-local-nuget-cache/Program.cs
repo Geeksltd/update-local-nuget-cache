@@ -73,7 +73,13 @@ namespace update_local_nuget_cache
             folder = folder.GetSubDirectory("bin");
             if (!folder.Exists()) return null;
 
-            return new[] { folder.GetSubDirectory("debug"), folder.GetSubDirectory("release") }
+            return new[] {
+                folder.GetSubDirectory("debug"),
+                folder.GetSubDirectory("release")
+            }.Concat(
+                folder
+                    .GetDirectories()
+                    .Where(x => x.Name.ContainsAny(new[] { "debug", "release" }, caseSensitive: false)))
             .FirstOrDefault(x => x.Exists());
         }
 
@@ -124,7 +130,12 @@ namespace update_local_nuget_cache
         static void FindPackageId()
         {
             var csProjXml = XElement.Load(FindCsProj().FullName);
-            PackageId = csProjXml.Descendants("PackageId").FirstOrDefault()?.Value
+
+            var packageIds = csProjXml.Descendants("PackageId").Select(x => x.Value).ToArray();
+            var tokens = Debug.Name.ToLiteralFromPascalCase().Split(' ').ToArray();
+
+            PackageId = packageIds
+                .OrderByDescending(x => x.ContainsAny(tokens, caseSensitive: false)).FirstOrDefault()
                 ?? throw new Exception("PackageId node not found in " + FindCsProj().FullName);
         }
 
@@ -161,12 +172,12 @@ namespace update_local_nuget_cache
         static DirectoryInfo FindLocalNugetCache()
         {
             var dotnet = Environment.GetEnvironmentVariable("PATH")
-                .Split(Path.PathSeparator).Except(x=>x.Contains(".dotnet"))
-                .FirstOrDefault(x=>x.Contains("dotnet"))
+                .Split(Path.PathSeparator).Except(x => x.Contains(".dotnet"))
+                .FirstOrDefault(x => x.Contains("dotnet"))
                 .AsDirectory().GetFiles()
                 .FirstOrDefault(x => x.NameWithoutExtension() == "dotnet");
 
-            if (!dotnet.Exists()) throw new Exception("Couldn't find dotnet.exe tool."); 
+            if (!dotnet.Exists()) throw new Exception("Couldn't find dotnet.exe tool.");
 
             return dotnet.Execute("nuget locals global-packages -l").ToLines().Trim()
                  .Select(v => v.TrimStart("global-packages: "))
