@@ -87,8 +87,9 @@ namespace update_local_nuget_cache
         {
             foreach (var target in destination.GetDirectories())
             {
-                var newTarget = Debug.GetDirectories()
-                    .FirstOrDefault(x => x.Name.ToLower().Remove(".") == target.Name.ToLower().Remove("."));
+                var newTarget =
+                    Debug.GetDirectories().FirstOrDefault(x => x.Name.ToLower().Remove(".") == target.Name.ToLower().Remove(".")) ??
+                    Debug.GetDirectories().OrderByDescending(x => x.Name.Length).FirstOrDefault(x => target.Name.ToLower().Remove(".").StartsWith(x.Name.ToLower().Remove(".")));
 
                 if (!newTarget.Exists())
                 {
